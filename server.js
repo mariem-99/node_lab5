@@ -1,62 +1,108 @@
-﻿// EXPRESS SERVER WITH MVC STRUCTURE
+﻿// PROFESSIONAL REST API SERVER
 import express from "express";
 import eventRoutes from "./src/routes/eventRoutes.js";
-import {
- logger,
- validateEventInput,
- measureTime
-} from "./src/middleware.js";
+import { logger, measureTime } from "./src/middleware.js";
+import swaggerUi from "swagger-ui-express";
+import { swaggerSpec } from "./src/swagger.js";
+import Database from "./src/config/database.js";
+
 const app = express();
 const PORT = 3000;
+const API_VERSION = "v1";
+
 // ===== MIDDLEWARE =====
 app.use(express.json());
 app.use(logger);
 app.use(measureTime);
-// ===== ROUTES =====
+
+// ===== SWAGGER DOCUMENTATION =====
+app.use("/api-docs", swaggerUi.serve);
+app.get("/api-docs", swaggerUi.setup(swaggerSpec));
+
+// ===== API DOCUMENTATION =====
 app.get("/", (req, res) => {
  res.json({
- message: "🎉 Event Manager API (MVC Structure)",
+ name: "Event Manager API",
  version: "1.0.0",
+ description: "Professional REST API for event management",
+ baseUrl: `http://localhost:${PORT}/api/${API_VERSION}`,
  endpoints: {
- getAllEvents: "GET /api/events",
- getEvent: "GET /api/events/:id",
- createEvent: "POST /api/events",
- updateEvent: "PUT /api/events/:id",
- deleteEvent: "DELETE /api/events/:id",
- health: "GET /health"
+ events: {
+ list: `GET /api/${API_VERSION}/events?page=1&limit=10`,
+ create: `POST /api/${API_VERSION}/events`,
+ get: `GET /api/${API_VERSION}/events/:id`,
+ update: `PUT /api/${API_VERSION}/events/:id`,
+ delete: `DELETE /api/${API_VERSION}/events/:id`,
+ stats: `GET /api/${API_VERSION}/events/stats`
+ },
+ filters: {
+ status: "?status=upcoming",
+ location: "?location=Sfax",
+ search: "?search=javascript",
+ minCapacity: "?minCapacity=20",
+ pagination: "?page=1&limit=10"
+ }
  }
  });
 });
-// Validation middleware for POST/PUT
-const validateEvent = (req, res, next) => {
- if (req.method === "POST" || req.method === "PUT") {
- validateEventInput(req, res, next);
- } else {
- next();
- }
-};
-app.use("/api/events", validateEvent);
-app.use("/api/events", eventRoutes);
-// Health check
+
+// ===== API ROUTES =====
+app.use(`/api/${API_VERSION}/events`, eventRoutes);
+
+// ===== HEALTH CHECK =====
 app.get("/health", (req, res) => {
  res.json({
  status: "✅ healthy",
+ timestamp: new Date().toISOString(),
  uptime: process.uptime().toFixed(2) + "s"
  });
 });
-// 404 handler
+
+// ===== ERROR HANDLERS =====
+// 404 Not Found
 app.use((req, res) => {
  res.status(404).json({
  success: false,
- message: `Not found: ${req.method} ${req.path}`
+ message: `Endpoint not found: ${req.method} ${req.path}`,
+ timestamp: new Date().toISOString()
  });
 });
-// ===== START SERVER =====
-app.listen(PORT, () => {
- console.log(`\n✅ Event Manager API (MVC) started!`);
- console.log(`📍 http://localhost:${PORT}`);
- console.log(`\n🏗 Architecture: Model-View-Controller`);
- console.log(` Models/ → Data operations`);
- console.log(` Controllers/ → Business logic`);
- console.log(` Routes/ → API endpoints\n`);
+
+// Error handler
+app.use((err, req, res, next) => {
+ console.error(err);
+ res.status(500).json({
+ success: false,
+ message: "Internal server error",
+ error: process.env.NODE_ENV === "development" ? err.message : undefined,
+ timestamp: new Date().toISOString()
+ });
 });
+
+// ===== START SERVER =====
+async function startServer() {
+ try {
+ // Connect to database
+ await Database.connect();
+
+ app.listen(PORT, () => {
+ console.log(`\n✨ Professional REST API Server (with MongoDB)`);
+ console.log(`📍 http://localhost:${PORT}`);
+ console.log(`🔗 API v${API_VERSION} at http://localhost:${PORT}/api/${API_VERSION}`);
+ console.log(`📚 Swagger Docs at http://localhost:${PORT}/api-docs`);
+ console.log(`💾 Database: MongoDB (Mongoose)\n`);
+ console.log(`🔌 Available Endpoints:`);
+ console.log(` GET /api/${API_VERSION}/events`);
+ console.log(` POST /api/${API_VERSION}/events`);
+ console.log(` GET /api/${API_VERSION}/events/:id`);
+ console.log(` PUT /api/${API_VERSION}/events/:id`);
+ console.log(` DELETE /api/${API_VERSION}/events/:id`);
+ console.log(`\n⏹ Press Ctrl+C to stop\n`);
+ });
+ } catch (error) {
+ console.error("Failed to start server:", error.message);
+ process.exit(1);
+ }
+}
+
+startServer();

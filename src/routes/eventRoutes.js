@@ -1,12 +1,14 @@
-// EVENT ROUTES
-// Define all event endpoints
+// PROFESSIONAL REST ROUTES
 import express from "express";
 import EventController from "../controllers/eventController.js";
 const router = express.Router();
-// Routes
+
+// CRUD Operations
 router.get("/", EventController.getAllEvents);
-router.get("/:id", EventController.getEventById);
 router.post("/", EventController.createEvent);
+router.get("/stats", EventController.getStats);
+router.get("/:id", EventController.getEventById);
 router.put("/:id", EventController.updateEvent);
 router.delete("/:id", EventController.deleteEvent);
+
 export default router;

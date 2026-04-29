@@ -1,4 +1,4 @@
-﻿{
+{
  "name": "lab-3-express-server",
  "version": "1.0.0",
  "description": "Learning Express.js and web servers",
@@ -8,10 +8,17 @@
   "start": "node server.js",
   "dev": "node --watch server.js"
  },
- "keywords": ["express", "nodejs", "webserver"],
+ "keywords": [
+  "express",
+  "nodejs",
+  "webserver"
+ ],
  "author": "Your Name",
  "license": "MIT",
  "dependencies": {
-  "express": "^5.0.0"
+  "express": "^5.0.0",
+  "mongoose": "^9.6.1",
+  "swagger-jsdoc": "^6.2.8",
+  "swagger-ui-express": "^5.0.1"
  }
 }
